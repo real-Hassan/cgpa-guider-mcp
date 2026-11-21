@@ -1,9 +1,11 @@
 import os
 from langchain.agents import create_agent
 from langchain.mcp import MCPAdapter
+from fastmcp.client import Client # comment it and the line at the end block to run locally
 from llm import llm
 
 MCP_URL = os.getenv("MCP_URL", "http://127.0.0.1:8000/mcp")
+FASTMCP_KEY = os.getenv("FASTMCP_KEY")
 
 SYSTEM_PROMPT = """you are an academic advising agent for pucit. figure out student gpas and target cgpas using only the tools i gave you. no shenanigans.
 
@@ -22,8 +24,13 @@ when checking if a target cgpa is reachable, you must do it incrementally:
 4. stop at the very first horizon that yields a required gpa <= 4.0. tell the user exactly which horizon worked and what average they need.
 5. if you widen all the way through semester 8 and it still requires > 4.0, tell them it's mathematically impossible before graduation."""
 
+
 async def build_agent(checkpointer=None):
-    tools = await MCPAdapter(MCP_URL).list_tools()
+    # uncomment this next line and comment out the next two lines to run locally
+    # tools = await MCPAdapter(MCP_URL).list_tools()
+    
+    server = Client(MCP_URL, auth=FASTMCP_KEY) if FASTMCP_KEY else MCP_URL
+    tools = await MCPAdapter(server).list_tools()
 
     agent = create_agent(
         model=llm,
